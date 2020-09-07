@@ -31,35 +31,25 @@
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(WIDTH, HEIGHT);
         var scene = new THREE.Scene();
-        var texture = new THREE.TextureLoader().load(
-            "https://images.pexels.com/photos/110854/pexels-photo-110854.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
-        );
-        // scene.background = texture;
-
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-        var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+        var camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
         camera.position.set(10, 10, 5);
-        camera.lookAt(new THREE.Vector3(0, 0, 0));
-        var controls = new OrbitControls(camera, renderer.domElement);
+        //camera.lookAt(new THREE.Vector3(0, 0, 0));
+        //var controls = new OrbitControls(camera, renderer.domElement);
         var geometry = new THREE.BoxGeometry();
         var material = new THREE.MeshPhongMaterial({ color: 0xd6d6d6 });
         var cube = new THREE.Mesh(geometry, material);
-        var gridXZ = new THREE.GridHelper(10, 10, 0xff0000, 0xffffff);
-
+        //var gridXZ = new THREE.GridHelper(10, 10, 0xff0000, 0xffffff);
         //scene.add(gridXZ);
         var loader = new FBXLoader();
         loader.load('models/fbx/myModel3.fbx', function (object) {
             object.scale.set(0.01, 0.01, 0.01);
             //var ac = new THREE.Mesh(object,material);
             object.traverse(function (object) {
-
                 if (object.isMesh) {
-
-
                     const oldMat = object.material;
                     object.material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide, });
-
                     /* object.material = new THREE.MeshPhysicalMaterial({
                          color: 0xffffff,
                          map: oldMat.map,
@@ -68,7 +58,6 @@
                          metalness: 0.0
                          //etc
                      });*/
-
                 }
             });
             //scene.add(object.children[3]);
@@ -76,10 +65,7 @@
             scene.add(object.children[0].children[4]);
             object.children[0].children[0].material = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0xffffff, emissiveIntensity: 0.05, specular: 0xffffff });
             object.children[0].children[3].material = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 /*emissive:  0xffffff,  emissiveIntensity : 100*/ });
-            console.log(object.children[0]);
-
-
-
+            //console.log(object.children[0]);
         });
         //console.log(object);
         var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
@@ -96,23 +82,16 @@
         rectLight.position.set(0, 5.2, 1);
         rectLight.lookAt(0, 0, 1);
         scene.add(rectLight)
-
-
-        //var spotLight = new THREE.SpotLight( 0xff5040,10,0,3.0,1,0);
-        //var tunnelLight1 = new THREE.PointLight(0xff5040, 2, 100, 0); //keeps going
-        //var tunnelLight1 = new THREE.PointLight(0xff5040, 2.2, 120, 16);
-        //tunnelLight1.position.set(0, 1, -12);
-        //scene.add(tunnelLight1);
-
         var tunnelLight2 = new THREE.PointLight(0x009686, 1.5, 40, 14);
         tunnelLight2.position.set(-1, 2.5, -1.5);
         scene.add(tunnelLight2);
-
         var tl = [];
         let amt = 20;
-
+        var tcolor = new THREE.Color(0xff5040);
+        //tcolor.lerp(rgb(0,0,0),0.5);
+        //i%2<1?0xff5040:0xff7940
         for (let i = 0; i < amt; i++) {
-            tl[i] = new THREE.PointLight(0xff5040, 2, 120, 16);
+            tl[i] = new THREE.PointLight(tcolor, 2, 120, 16);
             tl[i].position.set(0, 1, -12 - (10.5 * i));
             scene.add(tl[i]);
         }
@@ -166,42 +145,87 @@
         backMirror2.position.z -= 0.8;
         backMirror2.rotateX(- Math.PI);
         //scene.add(backMirror2);
-        var signLight = new THREE.SpotLight(0xFFF1E0, 1,1 );
+        var signLight = new THREE.SpotLight(0xFFF1E0, 1, 1);
         signLight.position.set(0, 4.3, 0.7);
         //signLight.lookAt(0, 3.3, -10);
         //scene.add(signLight);
         // var helper = new RectAreaLightHelper(signLight);
         // signLight.add(helper);
         //renderer.setFaceCulling(THREE.CullFaceNone);
-        controls.update();
+        //controls.update();
         //camera.position.z = 5;
+        var trackCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(4.26, 1.17, 12.29),
+            new THREE.Vector3(0.5, 1.05, 7.94),
+            new THREE.Vector3(0, 1, 2.27),
+            new THREE.Vector3(0, 1, -10),
+            new THREE.Vector3(0, 1, -20),
+            new THREE.Vector3(0, 1, -30),
+            new THREE.Vector3(0, 1, -50),
+            new THREE.Vector3(0, 1, -70)
+        ], false, "centripetal");
+        var trackPoints = trackCurve.getPoints(100);
+        var trackGeo = new THREE.BufferGeometry().setFromPoints(trackPoints);
+        var trackMat = new THREE.LineBasicMaterial({ color: 0xff0000 });
+        var trackCObj = new THREE.Line(trackGeo, trackMat);
+
+      //  scene.add(trackCObj);
+
+
+
+
+        var camPosIndex = 0;
+
+
         var animate = function () {
             requestAnimationFrame(animate);
             var timer = Date.now() * 0.005;
+            
 
             //tunnelLight1.intensity = 2 + (Math.sin(timer * 0.1) * 2);
             for (let i = 0; i < amt; i++) {
+                tl[i].position.y = 1 + (Math.sin((timer + (1.5 * i)) * 0.25) * 1);
+                tl[i].position.x = (Math.cos((timer + (1.5 * i)) * 0.25) * 1);
+                //tl[i].color=0xffbc40;
                 // console.log(i%3);
                 switch (i % 3) {
                     case 0:
-                        tl[i].intensity = 2 + (Math.cos(timer * 0.1+i) * 1.9);
+                        tl[i].intensity = 2 + (Math.cos(timer * 0.1 + i) * 1.9);
                         break;
                     case 1:
-                        tl[i].intensity = 1.5 + (Math.cos(timer * 0.166+i) * 1.3);
+                        tl[i].intensity = 1.5 + (Math.cos(timer * 0.166 + i) * 1.3);
                         break;
                     default:
-                        tl[i].intensity = 1.5 + (Math.sin(timer * 0.1165+i) * 1.4);
+                        tl[i].intensity = 1.5 + (Math.sin(timer * 0.1165 + i) * 1.4);
 
                 }
 
-               // tl[i].intensity = i % 2 == 0 ? (1 + (Math.cos(timer * 0.1 * i + i) * 2)) : (1 + (Math.sin(timer * 0.1 * i + i) * 2));
+                // tl[i].intensity = i % 2 == 0 ? (1 + (Math.cos(timer * 0.1 * i + i) * 2)) : (1 + (Math.sin(timer * 0.1 * i + i) * 2));
             }
             tunnelLight2.intensity = 2 + (Math.cos(timer * 0.133) * 1);
             //tunnelLight3.intensity = 1 + (Math.cos(timer * 0.166) * 1.5);
             // tunnelLight4.intensity = 1 + (Math.sin(timer * 0.1165) * 1.5);
 
-            controls.update();
+           // controls.update();
             renderer.render(scene, camera);
+            //console.clear();
+            //console.log(camera.position);
+            camPosIndex=camPosIndex+0.5;
+            if (camPosIndex > 1000) {
+                camPosIndex = 0;
+            }
+            var camPos = trackCurve.getPoint(camPosIndex/1000);
+            var camRot = trackCurve.getTangent(camPosIndex/1000);
+            camera.position.x=camPos.x;
+            camera.position.y=camPos.y;
+            camera.position.z=camPos.z;
+            //camera.rotation.x=camRot.x;
+            //camera.rotation.y=camRot.y;
+           // camera.rotation.z=camRot.z;
+            //camera.lookAt(trackCurve.getPoint((camPosIndex+1)/1000));
+           // camera.lookAt(0,0,0);
+            //console.log(camPosIndex);
+            if(camPosIndex<205){camera.lookAt(0,0.5,0);}
         };
         animate();
     </script>
