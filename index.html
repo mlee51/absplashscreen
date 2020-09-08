@@ -49,7 +49,7 @@
             object.traverse(function (object) {
                 if (object.isMesh) {
                     const oldMat = object.material;
-                    object.material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide, });
+                    object.material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide, shininess: 10.0 });
                     /* object.material = new THREE.MeshPhysicalMaterial({
                          color: 0xffffff,
                          map: oldMat.map,
@@ -88,11 +88,13 @@
         var tl = [];
         let amt = 20;
         var tcolor = new THREE.Color(0xff5040);
+        var ncolor = new THREE.Color(0xfc5603);
         //tcolor.lerp(rgb(0,0,0),0.5);
         //i%2<1?0xff5040:0xff7940
         for (let i = 0; i < amt; i++) {
-            tl[i] = new THREE.PointLight(tcolor, 2, 120, 16);
-            tl[i].position.set(0, 1, -12 - (10.5 * i));
+            tl[i] = new THREE.PointLight(tcolor, 2, 130, 15);
+            tl[i].position.set(0, 1, -6 - (10.5 * i));
+            tl[i].ival=Math.random() * (2 - 0.7) + 0.7;
             scene.add(tl[i]);
         }
         /*
@@ -184,21 +186,19 @@
 
             //tunnelLight1.intensity = 2 + (Math.sin(timer * 0.1) * 2);
             for (let i = 0; i < amt; i++) {
-                tl[i].position.y = 1 + (Math.sin((timer + (1.5 * i)) * 0.25) * 1);
-                tl[i].position.x = (Math.cos((timer + (1.5 * i)) * 0.25) * 1);
-                //tl[i].color=0xffbc40;
-                // console.log(i%3);
-                switch (i % 3) {
-                    case 0:
-                        tl[i].intensity = 2 + (Math.cos(timer * 0.1 + i) * 1.9);
-                        break;
-                    case 1:
-                        tl[i].intensity = 1.5 + (Math.cos(timer * 0.166 + i) * 1.3);
-                        break;
-                    default:
-                        tl[i].intensity = 1.5 + (Math.sin(timer * 0.1165 + i) * 1.4);
+                tl[i].position.y = 1 + (Math.sin((timer + (4 * i)) * 0.25) * 0.2);
+                tl[i].position.x = (Math.cos((timer + (4 * i)) * 0.25) * 0.2);
+                var mtimer = timer * 0.1;
+                var abslfo = Math.abs(Math.cos(0.1*timer+i));
+                var vcolor = new THREE.Color(THREE.Math.lerp(tcolor.r,ncolor.r,abslfo) , THREE.Math.lerp(tcolor.g,ncolor.g,abslfo) , THREE.Math.lerp(tcolor.b,ncolor.b,abslfo)  );
 
-                }
+
+                tl[i].color.set(vcolor);
+                console.log(vcolor);
+                
+                        tl[i].intensity = tl[i].ival + (Math.cos(mtimer + i) * tl[i].ival * 0.8);
+               
+                
 
                 // tl[i].intensity = i % 2 == 0 ? (1 + (Math.cos(timer * 0.1 * i + i) * 2)) : (1 + (Math.sin(timer * 0.1 * i + i) * 2));
             }
@@ -225,7 +225,7 @@
             //camera.lookAt(trackCurve.getPoint((camPosIndex+1)/1000));
            // camera.lookAt(0,0,0);
             //console.log(camPosIndex);
-            if(camPosIndex<205){camera.lookAt(0,0.5,0);}
+            if(camPosIndex<205){camera.lookAt(0,1.0,0);}
         };
         animate();
     </script>
