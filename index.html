@@ -46,7 +46,7 @@
         //var controls = new OrbitControls(camera, renderer.domElement);
         //controls.enableZoom = false;
         //controls.enablePan = false;
-        var controls = new FirstPersonControls( camera, renderer.domElement );
+        /*var controls = new FirstPersonControls( camera, renderer.domElement );
 				controls.movementSpeed = 0;
 				controls.lookSpeed = 0.05;
                 controls.constrainVertical=true;
@@ -54,7 +54,7 @@
                 controls.verticalMin=Math.PI*0.444;
                 controls.heightSpeed = false;
                 controls.heightMax = 0.6
-                controls.heightMin = 0.3;
+                controls.heightMin = 0.3;*/
                 
 
         var geometry = new THREE.BoxGeometry();
@@ -211,8 +211,8 @@
              camera.position.z = camPos.z * (1 - ((camPosIndex<500?0:camPosIndex-500) / 1000));
             // console.log(camPosIndex,x);
 
-            controls.update(clock.getDelta());
-            // if (camPosIndex < 205) { camera.lookAt(0, 1.0, 0); }
+            //controls.update(clock.getDelta());
+             if (camPosIndex < 205) { camera.lookAt(0, 1.0, 0); }
            
             renderer.render(scene, camera);
         };
