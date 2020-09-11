@@ -4,7 +4,15 @@
     <title>antibodysplash</title>
     <style>
         body {
+
             margin: 0;
+           /* position: absolute;
+            top: 40%;
+            -ms-transform: translateY(-50%);
+            transform: translateY(-50%);
+            */
+
+            background: rgb(0, 0, 0);
         }
 
         canvas {
@@ -27,18 +35,17 @@
         import { Reflector } from './examples/jsm/objects/Reflector.js';
         import { FirstPersonControls } from './examples/jsm/controls/FirstPersonControls.js';
         var WIDTH = window.innerWidth;
-        var HEIGHT = window.innerHeight;
+        var HEIGHT = window.innerHeight ;//> WIDTH ? WIDTH : window.innerHeight;
         var clock = new THREE.Clock();
         var renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(WIDTH, HEIGHT);
         var scene = new THREE.Scene();
-        renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-        var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-       // var camera = new THREE.Object3D();
-        
-        
+        var camera = new THREE.PerspectiveCamera(45, WIDTH / HEIGHT, 1, 1000);
+        // var camera = new THREE.Object3D();
+
+
         //camera.add(cam);
         //scene.add(camera);
         camera.position.set(10, 10, 5);
@@ -55,7 +62,7 @@
                 controls.heightSpeed = false;
                 controls.heightMax = 0.6
                 controls.heightMin = 0.3;*/
-                
+
 
         var geometry = new THREE.BoxGeometry();
         var material = new THREE.MeshPhongMaterial({ color: 0xd6d6d6 });
@@ -82,8 +89,13 @@
         });
 
 
-        cube.position.set(2, 0, 0);
-        //scene.add(cube);
+        cube.position.set(0, 1, 0);
+
+
+
+     
+
+        /*
         var width = 8;
         var height = 2;
         var intensity = 1;
@@ -91,6 +103,7 @@
         rectLight.position.set(0, 5.2, 1);
         rectLight.lookAt(0, 0, 1);
         scene.add(rectLight)
+        */
         var tunnelLight2 = new THREE.PointLight(0x009686, 1.5, 40, 14);
         tunnelLight2.position.set(-1, 2.5, -1.5);
         scene.add(tunnelLight2);
@@ -100,7 +113,7 @@
         var ncolor = new THREE.Color(0xfc5603);
 
         for (let i = 0; i < amt; i++) {
-            tl[i] = new THREE.PointLight(tcolor, 2, 110, 20);
+            tl[i] = new THREE.PointLight(tcolor, 2, 111, 19);
             tl[i].position.set(0, 1, -6 - (10.5 * i));
             tl[i].zval = tl[i].position.z;
             tl[i].ival = Math.random() * (1.5 - 0.8) + 0.8;
@@ -147,12 +160,12 @@
 
         var camPosIndex = 0;
 
-        var x = 0;
+        var x = 1;
         var e = 0;
         document.addEventListener('wheel', (event) => {
             e = event.deltaY / 400;
             if (e < 0) {
-                e *= 2;
+                e *= 3;
             }
             x += e;
             x = THREE.MathUtils.clamp(x, 0, 67);
@@ -172,7 +185,7 @@
                 tl[i].position.y = 1 + (Math.sin((timer + (4 * i)) * 0.25) * 0.2);
                 tl[i].position.x = (Math.cos((timer + (4 * i)) * 0.25) * 0.2);
 
-                if (tl[i].position.z > -1) {
+                if (tl[i].position.z > 0) {
                     tl[i].position.z = -205.5;
 
                 }
@@ -180,7 +193,7 @@
                     tl[i].position.z = -6;
                 }
                 else {
-                    tl[i].position.z += e < 0 ? 0 : e * (((camPosIndex < 500 ? 1 : camPosIndex - 500) / 1000));
+                    tl[i].position.z += 0.05+ e * (((camPosIndex < 100 ? 1 : camPosIndex - 100) / 1000));
                 }
                 //tl[i].position.z = tl[i].zval + (x *(camPosIndex<0? 0:camPosIndex / 1000) ): tl[i].position.z = -6 - (10.5 * (amt-1));
 
@@ -189,14 +202,23 @@
                 var abslfo = Math.abs(Math.cos(0.1 * timer + i));
                 var vcolor = new THREE.Color(THREE.Math.lerp(tcolor.r, ncolor.r, abslfo), THREE.Math.lerp(tcolor.g, ncolor.g, abslfo), THREE.Math.lerp(tcolor.b, ncolor.b, abslfo));
                 tl[i].color.set(vcolor);
-                tl[i].intensity = tl[i].ival + (Math.cos(mtimer + i) * tl[i].ival * 0.85);
+                if(tl[i].position.z > -4) 
+                {
+
+                    tl[i].intensity -= tl[i].intensity*0.05;
+                }
+                else{
+                    tl[i].intensity =  tl[i].ival + (Math.cos(mtimer + i) * tl[i].ival * 0.85);
+                } 
+              
+                
                 // tl[i].intensity = i % 2 == 0 ? (1 + (Math.cos(timer * 0.1 * i + i) * 2)) : (1 + (Math.sin(timer * 0.1 * i + i) * 2));
             }
-            tunnelLight2.intensity = 1.4 + (Math.cos(timer * 0.133) * 1);
+            tunnelLight2.intensity = 1.7 + (Math.sin(timer * 0.133) * 0.5);
 
-            //camPosIndex = camPosIndex + 0.5;
+             //camPosIndex = camPosIndex + 0.5;
 
-            camPosIndex = THREE.MathUtils.lerp(camPosIndex, x * 15, 0.05);
+            camPosIndex = THREE.MathUtils.lerp(camPosIndex, x * 30, 0.05);
             if (camPosIndex > 1000) {
                 camPosIndex = 1000;
             }
@@ -206,14 +228,16 @@
             //camPosIndex = Math.abs(camPosIndex);
             var camPos = trackCurve.getPoint(camPosIndex / 1000);
             var camRot = trackCurve.getTangent(camPosIndex / 1000);
-             camera.position.x = camPos.x;
-             camera.position.y = camPos.y;
-             camera.position.z = camPos.z * (1 - ((camPosIndex<500?0:camPosIndex-500) / 1000));
+            camera.position.x = camPos.x;
+            camera.position.y = camPos.y;
+            camera.position.z = camPos.z * (1 - ((camPosIndex < 800 ? 0 : camPosIndex - 800) / 1000));
+           // camera.fov = 45+(1000*camPosIndex/1000);
+           // camera.updateProjectionMatrix();
             // console.log(camPosIndex,x);
 
             //controls.update(clock.getDelta());
-             if (camPosIndex < 205) { camera.lookAt(0, 1.0, 0); }
-           
+            if (camPosIndex < 205) { camera.lookAt(0, 1.0, 0); }
+
             renderer.render(scene, camera);
         };
         animate();
