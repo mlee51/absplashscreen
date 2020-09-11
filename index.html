@@ -42,7 +42,23 @@
         renderer.setSize(WIDTH, HEIGHT);
         var scene = new THREE.Scene();
         document.body.appendChild(renderer.domElement);
+        document.addEventListener('mousemove', onDocumentMouseMove, false);
         var camera = new THREE.PerspectiveCamera(45, WIDTH / HEIGHT, 1, 1000);
+        var mouse = new THREE.Vector2();
+        var eulermouse = new THREE.Euler(0,0,0,'XYZ');
+        var qmouse = new THREE.Quaternion();
+
+        function onDocumentMouseMove(event)
+        {
+           // event.preventDefault();
+            mouse.x = (event.clientX/WIDTH) - .5;
+            mouse.y = (event.clientY/HEIGHT) - .5;
+            eulermouse.x = -mouse.y*0.6;
+            eulermouse.y = -mouse.x*0.6;
+            qmouse.setFromEuler(eulermouse);
+           // console.log(mouse);
+        }
+
         // var camera = new THREE.Object3D();
 
 
@@ -231,12 +247,18 @@
             camera.position.x = camPos.x;
             camera.position.y = camPos.y;
             camera.position.z = camPos.z * (1 - ((camPosIndex < 800 ? 0 : camPosIndex - 800) / 1000));
-           // camera.fov = 45+(1000*camPosIndex/1000);
-           // camera.updateProjectionMatrix();
+            
+            //camera.fov = 100-(100*camPosIndex/1000);
+            //camera.updateProjectionMatrix();
             // console.log(camPosIndex,x);
 
             //controls.update(clock.getDelta());
-            if (camPosIndex < 205) { camera.lookAt(0, 1.0, 0); }
+           
+            if (camPosIndex < 205) { camera.lookAt(0, 1.0, 0); camera.applyQuaternion(camera.quaternion.clone().multiply(qmouse));}
+            else{
+                camera.quaternion.setFromEuler(eulermouse);
+            }
+            
 
             renderer.render(scene, camera);
         };
