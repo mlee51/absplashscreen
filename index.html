@@ -6,12 +6,6 @@
         body {
 
             margin: 0;
-            /* position: absolute;
-            top: 40%;
-            -ms-transform: translateY(-50%);
-            transform: translateY(-50%);
-            */
-
             background: rgb(0, 0, 0);
         }
 
@@ -43,7 +37,7 @@
         vec2 _vUv = vUv;
         _vUv.y = (floor(vUv.y*10.))*0.1;
 		vec3 maskCd=texture2D(glowMask, vUv).rgb;
-		vec4 titleLightCd=vec4((1.-vUv.y)*vUv.y, .05*vUv.y, 0.03, fract((vUv.y*time.x*0.1)*100.)); // Antibody Club Glow Color
+		vec4 titleLightCd=vec4((1.-vUv.y)*vUv.y, .05*vUv.y, 0.03, fract((vUv.y*(mod(time.x,100.0))*100.1)*100.)); // Antibody Club Glow Color
 		vec4 sideLightsCd=vec4(0, 0.59, 0.531,  vUv.y); // Side Lights Glow Color
         //sideLightsCd=vec4(0, 0.59, 0.531,  fract(((1.-vUv.x)*vUv.x+time.x*0.01)*30.)); // Side Lights Fract Horizontal Push
 		
@@ -66,6 +60,35 @@
 		gl_FragColor=Cd;
 	}
 </script>
+<script type="x-shader/x-vertex" id="vertexshader">
+
+    varying vec2 vUv;
+
+    void main() {
+
+        vUv = uv;
+
+        gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+    }
+
+</script>
+
+<script type="x-shader/x-fragment" id="fragmentshader">
+
+    uniform sampler2D baseTexture;
+    uniform sampler2D bloomTexture;
+
+    varying vec2 vUv;
+
+    void main() {
+
+        gl_FragColor = ( texture2D( baseTexture, vUv ) + vec4( 1.0 ) * texture2D( bloomTexture, vUv ) );
+
+    }
+
+</script>
+
 
 <body>
     <script type="module">
@@ -81,14 +104,25 @@
         import { GUI } from './examples/jsm/libs/dat.gui.module.js';
         import { EffectComposer } from './examples/jsm/postprocessing/EffectComposer.js';
         import { RenderPass } from './examples/jsm/postprocessing/RenderPass.js';
+        import { ShaderPass } from './examples/jsm/postprocessing/ShaderPass.js';
         import { UnrealBloomPass } from './examples/jsm/postprocessing/UnrealBloomPass.js';
 
+        var mobile = false;
+
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            mobile = true;
+        }
         var WIDTH = window.innerWidth;
         var HEIGHT = window.innerHeight;//> WIDTH ? WIDTH : window.innerHeight;
         var clock = new THREE.Clock();
         var renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(window.devicePixelRatio > 1.5 ? 1.5 : window.devicePixelRatio);
         renderer.setSize(WIDTH, HEIGHT);
+        var ENTIRE_SCENE = 0, BLOOM_SCENE = 1;
+        var bloomLayer = new THREE.Layers();
+        bloomLayer.set(BLOOM_SCENE);
+
+
         // ## Tone mapping for exposure, might not be needed--
         //renderer.toneMapping = THREE.ReinhardToneMapping;
 
@@ -121,28 +155,19 @@
             HEIGHT = window.innerHeight;
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-
             renderer.setSize(window.innerWidth, window.innerHeight);
-
             controls.handleResize();
-
         }
 
-
-       
         camera.position.set(10, 10, 5);
-      
 
-        var geometry = new THREE.BoxGeometry();
-        var material = new THREE.MeshPhongMaterial({ color: 0xd6d6d6 });
-        var cube = new THREE.Mesh(geometry, material);
-      
+
 
         // ## Kevin added --
 
         var uniforms = {
             time: { value: msRunner }, // Just to get time into the shader
-            glowMask: { type: 't', value: new THREE.ImageUtils.loadTexture('models/textures/emissiveMap_1k.jpg') }
+            glowMask: { type: 't', value: new THREE.TextureLoader().load('models/textures/emissiveMap_1k.jpg') }
         };
         let glowMat = new THREE.ShaderMaterial({
             uniforms: uniforms,
@@ -172,23 +197,18 @@
                     }
                 }
             });
-          
+
             scene.add(object);
-           
+
 
         });
 
 
-        cube.position.set(0, 1, 0);
 
 
-
-
-
-       
-        var tunnelLight2 = new THREE.PointLight(0x009686, 1.5, 40, 14);
-        tunnelLight2.position.set(-1, 2.5, -1.5);
-        scene.add(tunnelLight2);
+        var tunnelCyanLight = new THREE.PointLight(0x009686, 1.5, 40, 14);
+        tunnelCyanLight.position.set(-1, 2.5, -1.5);
+        scene.add(tunnelCyanLight);
         var tl = [];
         let amt = 20;
         var tcolor = new THREE.Color(0xff5040);
@@ -202,17 +222,21 @@
             scene.add(tl[i]);
         }
 
-       
-        var pb = new THREE.PlaneBufferGeometry(300, 300);
-        var groundMirror = new Reflector(pb, {
-            clipBias: 0.003,
-            textureWidth: WIDTH * window.devicePixelRatio,
-            textureHeight: HEIGHT * window.devicePixelRatio,
-            color: 0x808080
-        });
-        groundMirror.position.y = -0.7;
-        groundMirror.rotateX(- Math.PI / 2);
-        scene.add(groundMirror);
+        function reflectivefloor() {
+            var pb = new THREE.PlaneBufferGeometry(300, 300);
+            var groundMirror = new Reflector(pb, {
+                clipBias: 0.003,
+                textureWidth: WIDTH * window.devicePixelRatio,
+                textureHeight: HEIGHT * window.devicePixelRatio,
+                color: 0x808080
+            });
+            groundMirror.position.y = -0.7;
+            groundMirror.rotateX(- Math.PI / 2);
+            scene.add(groundMirror);
+        }
+
+        if (mobile == false) { reflectivefloor(); }
+
 
         var trackCurve = new THREE.CatmullRomCurve3([
             new THREE.Vector3(4.26, 1.17, 12.29),
@@ -224,16 +248,10 @@
             new THREE.Vector3(0, 1, -50),
             new THREE.Vector3(0, 1, -70)
         ], false, "centripetal");
-        //var trackPoints = trackCurve.getPoints(100);
-        //var trackGeo = new THREE.BufferGeometry().setFromPoints(trackPoints);
-        //var trackMat = new THREE.LineBasicMaterial({ color: 0xff0000 });
-        //var trackCObj = new THREE.Line(trackGeo, trackMat);
 
-        //  scene.add(trackCObj);
 
         var camPosIndex = 0;
-
-        var x = 1;
+        var x = 10;
         var e = 0;
         document.addEventListener('wheel', (event) => {
             e = event.deltaY / 400;
@@ -242,14 +260,14 @@
             }
             x += e;
             x = THREE.MathUtils.clamp(x, 0, 100); // Tunnel travel limit
-          
+
 
 
         });
 
 
         // ## Dat Gui to help with setting settings-
-        
+
         //var datGui = new GUI();
         //datGui.closed = false;
         var params = {
@@ -261,23 +279,49 @@
         /*datGui.add( params, 'exposure', 0.1, 2 ).onChange( function ( value ) {
             renderer.toneMappingExposure = Math.pow( value, 4.0 );
         } );*/
-        
+
 
 
         // ## Add Unreal Bloom by Effect Composer
         // Composer - Default Scene; All objects
-        introComposer = new EffectComposer(renderer);
-        let renderPass = new RenderPass(scene, camera);
-        introComposer.addPass(renderPass);
 
+
+
+
+
+        let renderPass = new RenderPass(scene, camera);
         // THREE.UnrealBloomPass ( resolution, strength, radius, threshold )
         introBloomPass = new UnrealBloomPass(new THREE.Vector2(WIDTH * .5, HEIGHT * .5), 1.5, 0.8, 0.85);
         introBloomPass.threshold = params.bloomThreshold;
         introBloomPass.strength = params.bloomStrength;
         introBloomPass.radius = params.bloomRadius;
 
-        introComposer.addPass(introBloomPass);
-        introBloomPass.renderToScreen = true;
+        var bloomComposer = new EffectComposer(renderer);
+        bloomComposer.renderToScreen = false;
+        bloomComposer.addPass(renderPass);
+        bloomComposer.addPass(introBloomPass);
+
+
+        var finalPass = new ShaderPass(
+            new THREE.ShaderMaterial({
+                uniforms: {
+                    baseTexture: { value: null },
+                    bloomTexture: { value: bloomComposer.renderTarget2.texture }
+                },
+                vertexShader: document.getElementById('vertexshader').textContent,
+                fragmentShader: document.getElementById('fragmentshader').textContent,
+                defines: {}
+            }), "baseTexture"
+        );
+        finalPass.needsSwap = true;
+
+        introComposer = new EffectComposer(renderer);
+        introComposer.addPass(renderPass);
+        introComposer.addPass(finalPass);
+
+
+        //introComposer.addPass(introBloomPass);
+        //introBloomPass.renderToScreen = true;
 
         // ## Just to mess with the Bloom Settings --
         /*
@@ -295,14 +339,14 @@
 
 
 
-        window.addEventListener( 'resize', onWindowResize, false );
+        window.addEventListener('resize', onWindowResize, false);
 
         //controls.update();
 
         var animate = function () {
             requestAnimationFrame(animate);
             var timer = Date.now() * 0.005;
-           
+
 
             // ## --
             if (!startTime) startTime = timer;
@@ -322,10 +366,7 @@
                 else {
                     tl[i].position.z += 0.05 + e * (((camPosIndex < 100 ? 1 : camPosIndex - 100) / 1000));
                 }
-                
 
-
-                var mtimer = timer * 0.1;
                 var abslfo = Math.abs(Math.cos(0.1 * timer + i));
                 var vcolor = new THREE.Color(THREE.Math.lerp(tcolor.r, ncolor.r, abslfo), THREE.Math.lerp(tcolor.g, ncolor.g, abslfo), THREE.Math.lerp(tcolor.b, ncolor.b, abslfo));
                 tl[i].color.set(vcolor);
@@ -333,37 +374,35 @@
                     tl[i].intensity -= tl[i].intensity * 0.05;
                 }
                 else {
-                    tl[i].intensity = tl[i].ival + (Math.cos(mtimer + i) * tl[i].ival * 0.85);
+                    tl[i].intensity = tl[i].ival + (Math.cos(timer * 0.1 + i) * tl[i].ival * 0.85);
                 }
 
 
-                
-            }
-            tunnelLight2.intensity = 1.7 + (Math.sin(timer * 0.133) * 0.5);
 
-           
+            }
+            tunnelCyanLight.intensity = 1.7 + (Math.sin(timer * 0.133) * 0.5);
+
+
 
             camPosIndex = THREE.MathUtils.lerp(camPosIndex, x * 30, 0.05);
             if (camPosIndex > 1000) {
                 camPosIndex = 1000;
             }
-            
+
             var camPos = trackCurve.getPoint(camPosIndex / 1000);
             var camRot = trackCurve.getTangent(camPosIndex / 1000);
             camera.position.x = camPos.x;
             camera.position.y = camPos.y;
             camera.position.z = camPos.z * (1 - ((camPosIndex < 800 ? 0 : camPosIndex - 800) / 1000));
 
-           
-           
+
+
             if (camPosIndex < 205) { camera.lookAt(0, 1.0, 0); camera.applyQuaternion(camera.quaternion.clone().multiply(qmouse)); }
             else {
                 camera.quaternion.setFromEuler(eulermouse);
             }
 
-
-            //renderer.render(scene, camera);
-            introComposer.render(); // ## Render Composer
+            mobile ? renderer.render(scene, camera) : introComposer.render(); // ## Render Composer
         };
 
         animate();
