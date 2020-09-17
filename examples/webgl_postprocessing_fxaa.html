@@ -17,9 +17,11 @@
 
 			#container {
 				position: absolute;
+				
 				top: 80px;
 				width: 100%;
 				bottom: 0px;
+				
 			}
 		</style>
 	</head>
@@ -59,7 +61,7 @@
 
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color( 0xffffff );
-				scene.fog = new THREE.Fog( 0xcccccc, 100, 1500 );
+				scene.fog = new THREE.Fog( 0xfff, 100, 1500 );
 
 				clock = new THREE.Clock();
 
@@ -120,7 +122,7 @@
 
 				fxaaPass.material.uniforms[ 'resolution' ].value.x = 1 / ( container.offsetWidth * pixelRatio );
 				fxaaPass.material.uniforms[ 'resolution' ].value.y = 1 / ( container.offsetHeight * pixelRatio );
-
+				console.log(container.offsetWidth);
 				composer1 = new EffectComposer( renderer );
 				composer1.addPass( renderPass );
 				composer1.addPass( fxaaPass );
@@ -145,13 +147,13 @@
 				camera.updateProjectionMatrix();
 
 				renderer.setSize( container.offsetWidth, container.offsetHeight );
-				composer1.setSize( container.offsetWidth, container.offsetHeight );
+				//composer1.setSize( container.offsetWidth, container.offsetHeight );
 				composer2.setSize( container.offsetWidth, container.offsetHeight );
 
 				var pixelRatio = renderer.getPixelRatio();
 
-				fxaaPass.material.uniforms[ 'resolution' ].value.x = 1 / ( container.offsetWidth * pixelRatio );
-				fxaaPass.material.uniforms[ 'resolution' ].value.y = 1 / ( container.offsetHeight * pixelRatio );
+				//fxaaPass.material.uniforms[ 'resolution' ].value.x = 1 / ( container.offsetWidth * pixelRatio );
+				//fxaaPass.material.uniforms[ 'resolution' ].value.y = 1 / ( container.offsetHeight * pixelRatio );
 
 			}
 

@@ -37,7 +37,7 @@
         vec2 _vUv = vUv;
         _vUv.y = (floor(vUv.y*10.))*0.1;
 		vec3 maskCd=texture2D(glowMask, vUv).rgb;
-		vec4 titleLightCd=vec4((1.-vUv.y)*vUv.y, .05*vUv.y, 0.03, fract((vUv.y*(mod(time.x,100.0))*100.1)*100.)); // Antibody Club Glow Color
+		vec4 titleLightCd=vec4((1.-vUv.y)*vUv.y, .05*vUv.y, 0.03, 0.4+ fract((vUv.y*(mod(time.x,100.0))*100.1)*100.)); // Antibody Club Glow Color
 		vec4 sideLightsCd=vec4(0, 0.59, 0.531,  vUv.y); // Side Lights Glow Color
         //sideLightsCd=vec4(0, 0.59, 0.531,  fract(((1.-vUv.x)*vUv.x+time.x*0.01)*30.)); // Side Lights Fract Horizontal Push
 		
@@ -45,9 +45,9 @@
         //maskCd.r /= mix(0.,maskCd.r*maskCd.r*maskCd.r,0.7);
         maskCd.gb *=2.127;
         
-        maskCd.g *= 0.5;
-        maskCd.b *= 0.5;
-        //maskCd.r = 0.;
+        maskCd.g *= 0.4;
+        maskCd.b *= 0.4;
+        //maskCd.r *= 0.5;
 		
 		sideLightsCd = sideLightsCd * ( sin( time.x* -0.133 )*.1+.9 ); // Light Color
 		maskCd.b*= step( 0.0, sin(time.x*.2+cos(time.x + .57 + sin(time.x*.7+1.15) ))*.6+.4 + sin(time.x*.1+1.9)*.1 ); // Light flicker for fun
@@ -93,7 +93,7 @@
 <body>
     <script type="module">
         import * as THREE from './build/three.module.js';
-        import { OrbitControls } from './examples/jsm/controls/OrbitControls.js';
+        //import { OrbitControls } from './examples/jsm/controls/OrbitControls.js';
         import { FBXLoader } from './examples/jsm/loaders/FBXLoader.js';
         import { RectAreaLightHelper } from './examples/jsm/helpers/RectAreaLightHelper.js';
         import { Reflector } from './examples/jsm/objects/Reflector.js';
@@ -106,6 +106,7 @@
         import { RenderPass } from './examples/jsm/postprocessing/RenderPass.js';
         import { ShaderPass } from './examples/jsm/postprocessing/ShaderPass.js';
         import { UnrealBloomPass } from './examples/jsm/postprocessing/UnrealBloomPass.js';
+        import { FXAAShader } from './examples/jsm/shaders/FXAAShader.js';
 
         var mobile = false;
 
@@ -116,11 +117,15 @@
         var HEIGHT = window.innerHeight;//> WIDTH ? WIDTH : window.innerHeight;
         var clock = new THREE.Clock();
         var renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setPixelRatio(window.devicePixelRatio > 1.5 ? 1.5 : window.devicePixelRatio);
+        var pixelRatio = window.devicePixelRatio > 1.5 ? 1.5 : window.devicePixelRatio;
+        renderer.setPixelRatio(pixelRatio);
         renderer.setSize(WIDTH, HEIGHT);
         var ENTIRE_SCENE = 0, BLOOM_SCENE = 1;
         var bloomLayer = new THREE.Layers();
         bloomLayer.set(BLOOM_SCENE);
+        var materials = {};
+        var darkMaterial = new THREE.MeshBasicMaterial({ color: "black" });
+
 
 
         // ## Tone mapping for exposure, might not be needed--
@@ -153,10 +158,18 @@
         function onWindowResize() {
             WIDTH = window.innerWidth;
             HEIGHT = window.innerHeight;
-            camera.aspect = window.innerWidth / window.innerHeight;
+
+            
+            camera.aspect = WIDTH / HEIGHT;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            controls.handleResize();
+            renderer.setSize(WIDTH, HEIGHT);
+            //controls.handleResize();
+            
+            pixelRatio = renderer.getPixelRatio();
+            fxaaPass.material.uniforms['resolution'].value.x = 1 / (WIDTH * pixelRatio);
+            fxaaPass.material.uniforms['resolution'].value.y = 1 / (HEIGHT * pixelRatio);
+            introComposer.setSize(WIDTH,HEIGHT);
+            
         }
 
         camera.position.set(10, 10, 5);
@@ -187,18 +200,21 @@
                 if (curObj.isMesh) {
                     //const oldMat = curObj.material;
                     if (curObj.name == "antibody_club") {
-                        curObj.material = new THREE.MeshBasicMaterial({ color: 0x000000, emissive: 0x009686, emissiveIntensity: 0.0 });
+                        curObj.material = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xeb4034, emissiveIntensity: 0.0 });
+                        //curObj.layers.enable( BLOOM_SCENE );
                     } else if (curObj.name == "floor") {
-                        curObj.material = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 /*emissive:  0xffffff,  emissiveIntensity : 100*/ });
+                        curObj.material = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: mobile ? 1.0 : 0.8 /*emissive:  0xffffff,  emissiveIntensity : 100*/ });
                     } else if (curObj.name == "lightGlow") {
                         curObj.material = glowMat;
+                        curObj.layers.enable(BLOOM_SCENE);
                     } else {
-                        curObj.material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide, shininess: 10.0 });
+                        curObj.material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide, shininess: 30.0 });
                     }
                 }
             });
 
             scene.add(object);
+            
 
 
         });
@@ -251,7 +267,7 @@
 
 
         var camPosIndex = 0;
-        var x = 10;
+        var x = 4;
         var e = 0;
         document.addEventListener('wheel', (event) => {
             e = event.deltaY / 400;
@@ -267,14 +283,15 @@
 
 
         // ## Dat Gui to help with setting settings-
-
-        //var datGui = new GUI();
-        //datGui.closed = false;
+        /*
+        var datGui = new GUI();
+        datGui.closed = false;
+        */
         var params = {
             //exposure: 1,
-            bloomStrength: .21,
-            bloomThreshold: .03,
-            bloomRadius: .5
+            bloomStrength: 1.2,
+            bloomThreshold: .051,
+            bloomRadius: 0.92
         };
         /*datGui.add( params, 'exposure', 0.1, 2 ).onChange( function ( value ) {
             renderer.toneMappingExposure = Math.pow( value, 4.0 );
@@ -296,11 +313,17 @@
         introBloomPass.strength = params.bloomStrength;
         introBloomPass.radius = params.bloomRadius;
 
+
+        var fxaaPass = new ShaderPass(FXAAShader);
+        fxaaPass.material.uniforms['resolution'].value.x = 1 / (WIDTH * pixelRatio);
+        fxaaPass.material.uniforms['resolution'].value.y = 1 / (HEIGHT * pixelRatio);
+
         var bloomComposer = new EffectComposer(renderer);
         bloomComposer.renderToScreen = false;
         bloomComposer.addPass(renderPass);
         bloomComposer.addPass(introBloomPass);
-
+        bloomComposer.addPass(fxaaPass);
+        console.log(bloomComposer);
 
         var finalPass = new ShaderPass(
             new THREE.ShaderMaterial({
@@ -317,7 +340,9 @@
 
         introComposer = new EffectComposer(renderer);
         introComposer.addPass(renderPass);
+
         introComposer.addPass(finalPass);
+        introComposer.addPass(fxaaPass);
 
 
         //introComposer.addPass(introBloomPass);
@@ -325,13 +350,13 @@
 
         // ## Just to mess with the Bloom Settings --
         /*
-        datGui.add(params, 'bloomThreshold', 0.0, 1.0).onChange(function (value) {
+        datGui.add(params, 'bloomThreshold', 0.0, 10.0).onChange(function (value) {
             introBloomPass.threshold = Number(value);
         });
-        datGui.add(params, 'bloomStrength', 0.0, 1.0).onChange(function (value) {
+        datGui.add(params, 'bloomStrength', 0.0, 10.0).onChange(function (value) {
             introBloomPass.strength = Number(value);
         });
-        datGui.add(params, 'bloomRadius', 0.0, 1.0).step(0.01).onChange(function (value) {
+        datGui.add(params, 'bloomRadius', 0.0, 10.0).step(0.01).onChange(function (value) {
             introBloomPass.radius = Number(value);
         });
         */
@@ -341,7 +366,51 @@
 
         window.addEventListener('resize', onWindowResize, false);
 
-        //controls.update();
+
+
+        function renderBloom(mask) {
+
+            if (mask === true) {
+
+                scene.traverse(darkenNonBloomed);
+                bloomComposer.render();
+                scene.traverse(restoreMaterial);
+
+            } else {
+
+                camera.layers.set(BLOOM_SCENE);
+                bloomComposer.render();
+                camera.layers.set(ENTIRE_SCENE);
+
+            }
+
+        }
+
+        function darkenNonBloomed(obj) {
+
+            if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
+
+                materials[obj.uuid] = obj.material;
+                obj.material = darkMaterial;
+
+            }
+
+        }
+
+        function restoreMaterial(obj) {
+
+            if (materials[obj.uuid]) {
+
+                obj.material = materials[obj.uuid];
+                delete materials[obj.uuid];
+
+            }
+
+        }
+
+
+
+
 
         var animate = function () {
             requestAnimationFrame(animate);
@@ -401,10 +470,13 @@
             else {
                 camera.quaternion.setFromEuler(eulermouse);
             }
+            renderBloom(false);
+            introComposer.render();
+            //renderer.render(scene, camera);
 
-            mobile ? renderer.render(scene, camera) : introComposer.render(); // ## Render Composer
+            //mobile ? renderer.render(scene, camera) : introComposer.render(); // ## Render Composer
         };
-
+        
         animate();
 
 
