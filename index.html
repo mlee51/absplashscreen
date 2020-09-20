@@ -134,7 +134,7 @@
         var scene = new THREE.Scene();
         document.body.appendChild(renderer.domElement);
         document.addEventListener('mousemove', onDocumentMouseMove, false);
-        var camera = new THREE.PerspectiveCamera(45, WIDTH / HEIGHT, 1, 1000);
+        var camera = new THREE.PerspectiveCamera(mobile ? 60 : 50, WIDTH / HEIGHT, 1, 1000);
         var mouse = new THREE.Vector2();
         var eulermouse = new THREE.Euler(0, 0, 0, 'XYZ');
         var qmouse = new THREE.Quaternion();
@@ -159,23 +159,20 @@
             WIDTH = window.innerWidth;
             HEIGHT = window.innerHeight;
 
-            
+
             camera.aspect = WIDTH / HEIGHT;
             camera.updateProjectionMatrix();
             renderer.setSize(WIDTH, HEIGHT);
             //controls.handleResize();
-            
+
             pixelRatio = renderer.getPixelRatio();
             fxaaPass.material.uniforms['resolution'].value.x = 1 / (WIDTH * pixelRatio);
             fxaaPass.material.uniforms['resolution'].value.y = 1 / (HEIGHT * pixelRatio);
-            introComposer.setSize(WIDTH,HEIGHT);
-            
+            introComposer.setSize(WIDTH, HEIGHT);
+
         }
 
         camera.position.set(10, 10, 5);
-
-
-
         // ## Kevin added --
 
         var uniforms = {
@@ -203,18 +200,18 @@
                         curObj.material = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xeb4034, emissiveIntensity: 0.0 });
                         //curObj.layers.enable( BLOOM_SCENE );
                     } else if (curObj.name == "floor") {
-                        curObj.material = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: mobile ? 1.0 : 0.8 /*emissive:  0xffffff,  emissiveIntensity : 100*/ });
+                        curObj.material = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: mobile ? 1.0 : 0.85 /*emissive:  0xffffff,  emissiveIntensity : 100*/ });
                     } else if (curObj.name == "lightGlow") {
                         curObj.material = glowMat;
                         curObj.layers.enable(BLOOM_SCENE);
                     } else {
-                        curObj.material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide, shininess: 30.0 });
+                        curObj.material = new THREE.MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide, shininess: mobile ? 10.0 : 30.0 });
                     }
                 }
             });
 
             scene.add(object);
-            
+
 
 
         });
@@ -226,13 +223,17 @@
         tunnelCyanLight.position.set(-1, 2.5, -1.5);
         scene.add(tunnelCyanLight);
         var tl = [];
-        let amt = 20;
+        let amt = mobile ? 8 : 20;
+        let lightdelta = mobile ? 26.25 : 10.5;
+        let lightdist = mobile ? 222 : 111;
+        let lightdecay = mobile ? 16 : 18;
         var tcolor = new THREE.Color(0xff5040);
         var ncolor = new THREE.Color(0xfc5603);
 
+
         for (let i = 0; i < amt; i++) {
-            tl[i] = new THREE.PointLight(tcolor, 2, 111, 19);
-            tl[i].position.set(0, 1, -6 - (10.5 * i));
+            tl[i] = new THREE.PointLight(tcolor, 2, lightdist, lightdecay);
+            tl[i].position.set(0, 1, -6 - (lightdelta * i));
             tl[i].zval = tl[i].position.z;
             tl[i].ival = Math.random() * (1.5 - 0.8) + 0.8;
             scene.add(tl[i]);
@@ -267,7 +268,7 @@
 
 
         var camPosIndex = 0;
-        var x = 4;
+        var x = mobile? 14:1;
         var e = 0;
         document.addEventListener('wheel', (event) => {
             e = event.deltaY / 400;
@@ -323,7 +324,7 @@
         bloomComposer.addPass(renderPass);
         bloomComposer.addPass(introBloomPass);
         bloomComposer.addPass(fxaaPass);
-        console.log(bloomComposer);
+        //console.log(bloomComposer);
 
         var finalPass = new ShaderPass(
             new THREE.ShaderMaterial({
@@ -364,7 +365,7 @@
 
 
 
-        window.addEventListener('resize', onWindowResize, false);
+        //window.addEventListener('resize', onWindowResize, false);
 
 
 
@@ -411,8 +412,27 @@
 
 
 
-
+        let lightspeed = mobile ? 0.15 : 0.05;
         var animate = function () {
+            if (renderer.domElement.width !== window.innerWidth || renderer.domElement.height !== window.innerHeight) {
+                WIDTH = window.innerWidth;
+                HEIGHT = window.innerHeight;
+
+
+                camera.aspect = WIDTH / HEIGHT;
+                camera.updateProjectionMatrix();
+                renderer.setSize(WIDTH, HEIGHT);
+                //controls.handleResize();
+
+                pixelRatio = renderer.getPixelRatio();
+                fxaaPass.material.uniforms['resolution'].value.x = 1 / (WIDTH * pixelRatio);
+                fxaaPass.material.uniforms['resolution'].value.y = 1 / (HEIGHT * pixelRatio);
+                introComposer.setSize(WIDTH, HEIGHT);
+
+            }
+
+
+
             requestAnimationFrame(animate);
             var timer = Date.now() * 0.005;
 
@@ -422,24 +442,27 @@
             msRunner.x = (timer - startTime); // Date.now() is a HUGE number, so OpenGL doesn't like it
 
             for (let i = 0; i < amt; i++) {
-                tl[i].position.y = 1 + (Math.sin((timer + (4 * i)) * 0.25) * 0.2);
-                tl[i].position.x = (Math.cos((timer + (4 * i)) * 0.25) * 0.2);
-
+                if (mobile == true) {
+                    tl[i].position.y = 1 + (Math.sin((timer + (4 * i)) * 0.25) * 0.2);
+                    tl[i].position.x = (Math.cos((timer + (4 * i)) * 0.25) * 0.2);
+                }
                 if (tl[i].position.z > 0) {
                     tl[i].position.z = -205.5;
+                    tl[i].distance = lightdist;
 
                 }
                 else if (tl[i].position.z < -205.5) {
                     tl[i].position.z = -6;
                 }
                 else {
-                    tl[i].position.z += 0.05 + e * (((camPosIndex < 100 ? 1 : camPosIndex - 100) / 1000));
+                    tl[i].position.z += lightspeed + e * (((camPosIndex < 100 ? 1 : camPosIndex - 100) / 1000));
                 }
 
                 var abslfo = Math.abs(Math.cos(0.1 * timer + i));
                 var vcolor = new THREE.Color(THREE.Math.lerp(tcolor.r, ncolor.r, abslfo), THREE.Math.lerp(tcolor.g, ncolor.g, abslfo), THREE.Math.lerp(tcolor.b, ncolor.b, abslfo));
                 tl[i].color.set(vcolor);
                 if (tl[i].position.z > -4) {
+                    tl[i].distance += 10.0;
                     tl[i].intensity -= tl[i].intensity * 0.05;
                 }
                 else {
@@ -466,8 +489,8 @@
 
 
 
-            if (camPosIndex < 205) { camera.lookAt(0, 1.0, 0); camera.applyQuaternion(camera.quaternion.clone().multiply(qmouse)); }
-            else {
+            if (camPosIndex < 205) { camera.lookAt(0, 1.0, 0); if (mobile == false) { camera.applyQuaternion(camera.quaternion.clone().multiply(qmouse)); } }
+            else if (mobile == false) {
                 camera.quaternion.setFromEuler(eulermouse);
             }
             renderBloom(false);
@@ -476,7 +499,7 @@
 
             //mobile ? renderer.render(scene, camera) : introComposer.render(); // ## Render Composer
         };
-        
+
         animate();
 
 
