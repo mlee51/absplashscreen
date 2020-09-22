@@ -106,8 +106,8 @@ class BackgroundTunnel extends Component {
         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
             this.mobile = true;
         }
-        this.WIDTH = this.mount.clientWidth;
-        this.HEIGHT = this.mount.clientHeight;
+        this.WIDTH = window.innerWidth;
+        this.HEIGHT = window.innerHeight;
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.pixelRatio = window.devicePixelRatio > 1.5 ? 1.5 : window.devicePixelRatio;
         this.renderer.setPixelRatio(this.pixelRatio);
