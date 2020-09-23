@@ -144,13 +144,14 @@
         var introBloomPass = null;
         var startTime = null;
         var msRunner = new THREE.Vector2(0, 0);
+        var turnmod = 100.0;
 
         function onDocumentMouseMove(event) {
             // event.preventDefault();
             mouse.x = (event.clientX / WIDTH) - .5;
             mouse.y = (event.clientY / HEIGHT) - .5;
-            eulermouse.x = -mouse.y * 0.6;
-            eulermouse.y = -mouse.x * 0.6;
+            eulermouse.x = -mouse.y * 0.3 ;
+            eulermouse.y = -mouse.x * 0.3 ;
             qmouse.setFromEuler(eulermouse);
             // console.log(mouse);
         }
